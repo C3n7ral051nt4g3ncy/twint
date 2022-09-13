@@ -40,7 +40,7 @@ def _autoget(_type):
 
     if _type == "tweet":
         Tweets_df = _concat(Tweets_df, _type)
-    elif _type == "followers" or _type == "following":
+    elif _type in ["followers", "following"]:
         Follow_df = _concat(Follow_df, _type)
     elif _type == "user":
         User_df = _concat(User_df, _type)
@@ -56,13 +56,13 @@ def update(object, config):
     #             (object.__class__.__name__ == "user")*"user")
     #except AttributeError:
     #    _type = config.Following*"following" + config.Followers*"followers"
-    if object.__class__.__name__ == "tweet":
+    if object.__class__.__name__ == "dict":
+        _type = config.Following*"following" + config.Followers*"followers"
+
+    elif object.__class__.__name__ == "tweet":
         _type = "tweet"
     elif object.__class__.__name__ == "user":
         _type = "user"
-    elif object.__class__.__name__ == "dict":
-        _type = config.Following*"following" + config.Followers*"followers"
-
     if _type == "tweet":
         Tweet = object
         datetime_ms = datetime.datetime.strptime(Tweet.datetime, Tweet_formats['datetime']).timestamp() * 1000
@@ -136,7 +136,7 @@ def update(object, config):
             "background_image": background_image,
             }
         _object_blocks[_type].append(_data)
-    elif _type == "followers" or _type == "following":
+    elif _type in ["followers", "following"]:
         _data = {
             config.Following*"following" + config.Followers*"followers" :
                              {config.Username: object[_type]}
@@ -159,11 +159,7 @@ def clean():
     User_df = None
 
 def save(_filename, _dataframe, **options):
-    if options.get("dataname"):
-        _dataname = options.get("dataname")
-    else:
-        _dataname = "twint"
-
+    _dataname = options.get("dataname") or "twint"
     if not options.get("type"):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -179,18 +175,12 @@ def save(_filename, _dataframe, **options):
               (HDF5, default, or Pickle)""")
 
 def read(_filename, **options):
-    if not options.get("dataname"):
-        _dataname = "twint"
-    else:
-        _dataname = options.get("dataname")
-
+    _dataname = options.get("dataname") or "twint"
     if not options.get("type"):
         _store = pd.HDFStore(_filename + ".h5")
-        _df = _store[_dataname]
-        return _df
+        return _store[_dataname]
     elif options.get("type") == "Pickle":
-        _df = pd.read_pickle(_filename + ".pkl")
-        return _df
+        return pd.read_pickle(_filename + ".pkl")
     else:
         print("""Please specify: DataFrame, DataFrame name (twint as default),
               filename and type (HDF5, default, or Pickle""")

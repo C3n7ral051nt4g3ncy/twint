@@ -31,7 +31,7 @@ Tweet_formats = {
 def _get_mentions(tw):
     """Extract mentions from tweet
     """
-    logme.debug(__name__ + ':get_mentions')
+    logme.debug(f'{__name__}:get_mentions')
     try:
         mentions = [
             {
@@ -64,7 +64,7 @@ def _get_reply_to(tw):
 def getText(tw):
     """Replace some text
     """
-    logme.debug(__name__ + ':getText')
+    logme.debug(f'{__name__}:getText')
     text = tw['full_text']
     text = text.replace("http", " http")
     text = text.replace("pic.twitter", " pic.twitter")
@@ -76,7 +76,7 @@ def getText(tw):
 def Tweet(tw, config):
     """Create Tweet object
     """
-    logme.debug(__name__ + ':Tweet')
+    logme.debug(f'{__name__}:Tweet')
     t = tweet()
     t.id = int(tw['id_str'])
     t.id_str = tw["id_str"]
@@ -147,9 +147,9 @@ def Tweet(tw, config):
     except KeyError:
         # means that the quoted tweet have been deleted
         t.quote_url = 0
-    t.near = config.Near if config.Near else ""
-    t.geo = config.Geo if config.Geo else ""
-    t.source = config.Source if config.Source else ""
+    t.near = config.Near or ""
+    t.geo = config.Geo or ""
+    t.source = config.Source or ""
     t.translate = ''
     t.trans_src = ''
     t.trans_dest = ''
@@ -159,8 +159,10 @@ def Tweet(tw, config):
             t.translate = ts.text
             t.trans_src = ts.src
             t.trans_dest = ts.dest
-        # ref. https://github.com/SuniTheFish/ChainTranslator/blob/master/ChainTranslator/__main__.py#L31
         except ValueError as e:
-            logme.debug(__name__ + ':Tweet:translator.translate:' + str(e))
-            raise Exception("Invalid destination language: {} / Tweet: {}".format(config.TranslateDest, t.tweet))
+            logme.debug(f'{__name__}:Tweet:translator.translate:{str(e)}')
+            raise Exception(
+                f"Invalid destination language: {config.TranslateDest} / Tweet: {t.tweet}"
+            )
+
     return t

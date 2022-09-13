@@ -7,7 +7,7 @@ from datetime import datetime
 
 def Conn(database):
     if database:
-        print("[+] Inserting into Database: " + str(database))
+        print(f"[+] Inserting into Database: {str(database)}")
         conn = init(database)
         if isinstance(conn, str): # error
             print(conn)
@@ -181,20 +181,10 @@ def init(db):
         return str(e)
 
 def fTable(Followers):
-    if Followers:
-        table = "followers_names"
-    else:
-        table = "following_names"
-
-    return table
+    return "followers_names" if Followers else "following_names"
 
 def uTable(Followers):
-    if Followers:
-        table = "followers"
-    else:
-        table = "following"
-
-    return table
+    return "followers" if Followers else "following"
 
 def follow(conn, Username, Followers, User):
     try:
@@ -225,11 +215,8 @@ def user(conn, config, User):
         old_hash = get_hash_id(conn, User.id)
 
         if old_hash == -1 or old_hash != hex_dig:
-            query = f"INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+            query = "INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
             cursor.execute(query, entry)
-        else:
-            pass
-
         if config.Followers or config.Following:
             table = uTable(config.Followers)
             query = f"INSERT INTO {table} VALUES(?,?)"
@@ -288,8 +275,8 @@ def tweets(conn, Tweet, config):
             cursor.execute(query, (int(Tweet.user_rt_id), Tweet.user_rt, Tweet.id, int(Tweet.retweet_id), _d))
 
         if Tweet.reply_to:
+            query = 'INSERT INTO replies VALUES(?,?,?)'
             for reply in Tweet.reply_to:
-                query = 'INSERT INTO replies VALUES(?,?,?)'
                 cursor.execute(query, (Tweet.id, int(reply['user_id']), reply['username']))
 
         conn.commit()

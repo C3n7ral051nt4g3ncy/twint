@@ -20,7 +20,7 @@ from . import storage
 def error(_error, message):
     """ Print errors to stdout
     """
-    print("[-] {}: {}".format(_error, message))
+    print(f"[-] {_error}: {message}")
     sys.exit(0)
 
 
@@ -45,7 +45,11 @@ def check(args):
     elif args.search is None:
         if args.custom_query is not None:
             pass
-        elif (args.geo or args.near) is None and not (args.all or args.userid):
+        elif (
+            (args.geo or args.near) is None
+            and not args.all
+            and not args.userid
+        ):
             error("Error", "Please use at least -u, -s, -g or --near.")
     elif args.all and args.userid:
         error("Contradicting Args",
@@ -69,9 +73,7 @@ def loadUserList(ul, _type):
     else:
         userlist = ul.split(",")
     if _type == "search":
-        un = ""
-        for user in userlist:
-            un += "%20OR%20from%3A" + user
+        un = "".join(f"%20OR%20from%3A{user}" for user in userlist)
         return un[15:]
     return userlist
 
@@ -257,9 +259,7 @@ def options():
                     type=float, default=3.0)
     ap.add_argument("--min-wait-time", type=float, default=15,
                     help="specifiy a minimum wait time in case of scraping limit error. This value will be adjusted by twint if the value provided does not satisfy the limits constraints")
-    args = ap.parse_args()
-
-    return args
+    return ap.parse_args()
 
 
 def main():

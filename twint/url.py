@@ -11,7 +11,7 @@ base = "https://api.twitter.com/2/search/adaptive.json"
 def _sanitizeQuery(_url, params):
     _serialQuery = ""
     _serialQuery = urlencode(params, quote_via=quote)
-    _serialQuery = _url + "?" + _serialQuery
+    _serialQuery = f"{_url}?{_serialQuery}"
     return _serialQuery
 
 
@@ -25,7 +25,7 @@ def _formatDate(date):
 
 
 async def Favorites(username, init):
-    logme.debug(__name__ + ':Favorites')
+    logme.debug(f'{__name__}:Favorites')
     url = f"{mobile}/{username}/favorites?lang=en"
 
     if init != '-1':
@@ -35,7 +35,7 @@ async def Favorites(username, init):
 
 
 async def Followers(username, init):
-    logme.debug(__name__ + ':Followers')
+    logme.debug(f'{__name__}:Followers')
     url = f"{mobile}/{username}/followers?lang=en"
 
     if init != '-1':
@@ -45,7 +45,7 @@ async def Followers(username, init):
 
 
 async def Following(username, init):
-    logme.debug(__name__ + ':Following')
+    logme.debug(f'{__name__}:Following')
     url = f"{mobile}/{username}/following?lang=en"
 
     if init != '-1':
@@ -55,7 +55,7 @@ async def Following(username, init):
 
 
 async def MobileProfile(username, init):
-    logme.debug(__name__ + ':MobileProfile')
+    logme.debug(f'{__name__}:MobileProfile')
     url = f"{mobile}/{username}?lang=en"
 
     if init != '-1':
@@ -65,7 +65,7 @@ async def MobileProfile(username, init):
 
 
 async def Search(config, init):
-    logme.debug(__name__ + ':Search')
+    logme.debug(f'{__name__}:Search')
     url = base
     tweet_count = 100
     q = ""
@@ -99,8 +99,7 @@ async def Search(config, init):
     if not config.Popular_tweets:
         params.append(('f', 'tweets'))
     if config.Lang:
-        params.append(("l", config.Lang))
-        params.append(("lang", "en"))
+        params.extend((("l", config.Lang), ("lang", "en")))
     if config.Query:
         q += f" from:{config.Query}"
     if config.Username:
@@ -156,7 +155,7 @@ async def Search(config, init):
     if config.Members_list:
         q += f" list:{config.Members_list}"
     if config.Filter_retweets:
-        q += f" exclude:nativeretweets exclude:retweets"
+        q += " exclude:nativeretweets exclude:retweets"
     if config.Custom_query:
         q = config.Custom_query
 
@@ -167,7 +166,7 @@ async def Search(config, init):
 
 
 def SearchProfile(config, init=None):
-    logme.debug(__name__ + ':SearchProfile')
+    logme.debug(f'{__name__}:SearchProfile')
     _url = 'https://api.twitter.com/2/timeline/profile/{user_id}.json'.format(user_id=config.User_id)
     tweet_count = 100
     params = [

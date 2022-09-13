@@ -66,7 +66,7 @@ def dict_to_url(dct):
 
 
 def get_connector(config):
-    logme.debug(__name__ + ':get_connector')
+    logme.debug(f'{__name__}:get_connector')
     _connector = None
     if config.Proxy_host:
         if config.Proxy_host.lower() == "tor":
@@ -81,7 +81,7 @@ def get_connector(config):
                 _type = ProxyType.SOCKS4
             elif config.Proxy_type.lower() == "http":
                 global httpproxy
-                httpproxy = "http://" + config.Proxy_host + ":" + str(config.Proxy_port)
+                httpproxy = f"http://{config.Proxy_host}:{str(config.Proxy_port)}"
                 return _connector
             else:
                 logme.critical("get_connector:proxy-type-error")
@@ -93,20 +93,19 @@ def get_connector(config):
                 port=config.Proxy_port,
                 rdns=True)
         else:
-            logme.critical(__name__ + ':get_connector:proxy-port-type-error')
+            logme.critical(f'{__name__}:get_connector:proxy-port-type-error')
             print("Error: Please specify --proxy-host, --proxy-port, and --proxy-type")
             sys.exit(1)
-    else:
-        if config.Proxy_port or config.Proxy_type:
-            logme.critical(__name__ + ':get_connector:proxy-host-arg-error')
-            print("Error: Please specify --proxy-host, --proxy-port, and --proxy-type")
-            sys.exit(1)
+    elif config.Proxy_port or config.Proxy_type:
+        logme.critical(f'{__name__}:get_connector:proxy-host-arg-error')
+        print("Error: Please specify --proxy-host, --proxy-port, and --proxy-type")
+        sys.exit(1)
 
     return _connector
 
 
 async def RequestUrl(config, init):
-    logme.debug(__name__ + ':RequestUrl')
+    logme.debug(f'{__name__}:RequestUrl')
     _connector = get_connector(config)
     _serialQuery = ""
     params = []
@@ -115,20 +114,20 @@ async def RequestUrl(config, init):
 
     # TODO : do this later
     if config.Profile:
-        logme.debug(__name__ + ':RequestUrl:Profile')
+        logme.debug(f'{__name__}:RequestUrl:Profile')
         _url, params, _serialQuery = url.SearchProfile(config, init)
     elif config.TwitterSearch:
-        logme.debug(__name__ + ':RequestUrl:TwitterSearch')
+        logme.debug(f'{__name__}:RequestUrl:TwitterSearch')
         _url, params, _serialQuery = await url.Search(config, init)
     else:
         if config.Following:
-            logme.debug(__name__ + ':RequestUrl:Following')
+            logme.debug(f'{__name__}:RequestUrl:Following')
             _url = await url.Following(config.Username, init)
         elif config.Followers:
-            logme.debug(__name__ + ':RequestUrl:Followers')
+            logme.debug(f'{__name__}:RequestUrl:Followers')
             _url = await url.Followers(config.Username, init)
         else:
-            logme.debug(__name__ + ':RequestUrl:Favorites')
+            logme.debug(f'{__name__}:RequestUrl:Favorites')
             _url = await url.Favorites(config.Username, init)
         _serialQuery = _url
 
@@ -141,28 +140,31 @@ async def RequestUrl(config, init):
 
 
 def ForceNewTorIdentity(config):
-    logme.debug(__name__ + ':ForceNewTorIdentity')
+    logme.debug(f'{__name__}:ForceNewTorIdentity')
     try:
         tor_c = socket.create_connection(('127.0.0.1', config.Tor_control_port))
-        tor_c.send('AUTHENTICATE "{}"\r\nSIGNAL NEWNYM\r\n'.format(config.Tor_control_password).encode())
+        tor_c.send(
+            f'AUTHENTICATE "{config.Tor_control_password}"\r\nSIGNAL NEWNYM\r\n'.encode()
+        )
+
         response = tor_c.recv(1024)
         if response != b'250 OK\r\n250 OK\r\n':
-            sys.stderr.write('Unexpected response from Tor control port: {}\n'.format(response))
-            logme.critical(__name__ + ':ForceNewTorIdentity:unexpectedResponse')
+            sys.stderr.write(f'Unexpected response from Tor control port: {response}\n')
+            logme.critical(f'{__name__}:ForceNewTorIdentity:unexpectedResponse')
     except Exception as e:
-        logme.debug(__name__ + ':ForceNewTorIdentity:errorConnectingTor')
-        sys.stderr.write('Error connecting to Tor control port: {}\n'.format(repr(e)))
+        logme.debug(f'{__name__}:ForceNewTorIdentity:errorConnectingTor')
+        sys.stderr.write(f'Error connecting to Tor control port: {repr(e)}\n')
         sys.stderr.write('If you want to rotate Tor ports automatically - enable Tor control port\n')
 
 
 async def Request(_url, connector=None, params=None, headers=None):
-    logme.debug(__name__ + ':Request:Connector')
+    logme.debug(f'{__name__}:Request:Connector')
     async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
         return await Response(session, _url, params)
 
 
 async def Response(session, _url, params=None):
-    logme.debug(__name__ + ':Response')
+    logme.debug(f'{__name__}:Response')
     with timeout(120):
         async with session.get(_url, ssl=True, params=params, proxy=httpproxy) as response:
             resp = await response.text()
@@ -172,7 +174,7 @@ async def Response(session, _url, params=None):
 
 
 async def RandomUserAgent(wa=None):
-    logme.debug(__name__ + ':RandomUserAgent')
+    logme.debug(f'{__name__}:RandomUserAgent')
     try:
         if wa:
             return "Mozilla/5.0 (Windows NT 6.4; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36"
@@ -182,35 +184,35 @@ async def RandomUserAgent(wa=None):
 
 
 async def Username(_id, bearer_token, guest_token):
-    logme.debug(__name__ + ':Username')
+    logme.debug(f'{__name__}:Username')
     _dct = {'userId': _id, 'withHighlightedLabel': False}
-    _url = "https://api.twitter.com/graphql/B9FuNQVmyx32rdbIPEZKag/UserByRestId?variables={}".format(dict_to_url(_dct))
+    _url = f"https://api.twitter.com/graphql/B9FuNQVmyx32rdbIPEZKag/UserByRestId?variables={dict_to_url(_dct)}"
+
     _headers = {
         'authorization': bearer_token,
         'x-guest-token': guest_token,
     }
     r = await Request(_url, headers=_headers)
     j_r = loads(r)
-    username = j_r['data']['user']['legacy']['screen_name']
-    return username
+    return j_r['data']['user']['legacy']['screen_name']
 
 
 async def Tweet(url, config, conn):
-    logme.debug(__name__ + ':Tweet')
+    logme.debug(f'{__name__}:Tweet')
     try:
         response = await Request(url)
         soup = BeautifulSoup(response, "html.parser")
         tweets = soup.find_all("div", "tweet")
         await Tweets(tweets, config, conn, url)
     except Exception as e:
-        logme.critical(__name__ + ':Tweet:' + str(e))
+        logme.critical(f'{__name__}:Tweet:{str(e)}')
 
 
 async def User(username, config, conn, user_id=False):
-    logme.debug(__name__ + ':User')
+    logme.debug(f'{__name__}:User')
     _dct = {'screen_name': username, 'withHighlightedLabel': False}
-    _url = 'https://api.twitter.com/graphql/jMaTS-_Ea8vh9rpKggJbCQ/UserByScreenName?variables={}'\
-        .format(dict_to_url(_dct))
+    _url = f'https://api.twitter.com/graphql/jMaTS-_Ea8vh9rpKggJbCQ/UserByScreenName?variables={dict_to_url(_dct)}'
+
     _headers = {
         'authorization': config.Bearer_token,
         'x-guest-token': config.Guest_token,
@@ -220,25 +222,24 @@ async def User(username, config, conn, user_id=False):
         j_r = loads(response)
         if user_id:
             try:
-                _id = j_r['data']['user']['rest_id']
-                return _id
+                return j_r['data']['user']['rest_id']
             except KeyError as e:
-                logme.critical(__name__ + ':User:' + str(e))
+                logme.critical(f'{__name__}:User:{str(e)}')
                 return
         await Users(j_r, config, conn)
     except Exception as e:
-        logme.critical(__name__ + ':User:' + str(e))
+        logme.critical(f'{__name__}:User:{str(e)}')
         raise
 
 
 def Limit(Limit, count):
-    logme.debug(__name__ + ':Limit')
+    logme.debug(f'{__name__}:Limit')
     if Limit is not None and count >= int(Limit):
         return True
 
 
 async def Multi(feed, config, conn):
-    logme.debug(__name__ + ':Multi')
+    logme.debug(f'{__name__}:Multi')
     count = 0
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
@@ -247,27 +248,27 @@ async def Multi(feed, config, conn):
             for tweet in feed:
                 count += 1
                 if config.Favorites or config.Profile_full:
-                    logme.debug(__name__ + ':Multi:Favorites-profileFull')
+                    logme.debug(f'{__name__}:Multi:Favorites-profileFull')
                     link = tweet.find("a")["href"]
                     url = f"https://twitter.com{link}&lang=en"
                 elif config.User_full:
-                    logme.debug(__name__ + ':Multi:userFull')
+                    logme.debug(f'{__name__}:Multi:userFull')
                     username = tweet.find("a")["name"]
                     url = f"http://twitter.com/{username}?lang=en"
                 else:
-                    logme.debug(__name__ + ':Multi:else-url')
+                    logme.debug(f'{__name__}:Multi:else-url')
                     link = tweet.find("a", "tweet-timestamp js-permalink js-nav js-tooltip")["href"]
                     url = f"https://twitter.com{link}?lang=en"
 
                 if config.User_full:
-                    logme.debug(__name__ + ':Multi:user-full-Run')
+                    logme.debug(f'{__name__}:Multi:user-full-Run')
                     futures.append(loop.run_in_executor(executor, await User(url,
                                                                              config, conn)))
                 else:
-                    logme.debug(__name__ + ':Multi:notUser-full-Run')
+                    logme.debug(f'{__name__}:Multi:notUser-full-Run')
                     futures.append(loop.run_in_executor(executor, await Tweet(url,
                                                                               config, conn)))
-            logme.debug(__name__ + ':Multi:asyncioGather')
+            logme.debug(f'{__name__}:Multi:asyncioGather')
             await asyncio.gather(*futures)
     except Exception as e:
         # TODO: fix error not error

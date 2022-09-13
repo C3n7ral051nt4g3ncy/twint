@@ -16,21 +16,18 @@ def convertToDateTime(string):
     ListLength = len(dateTimeList)
     if ListLength == 2:
         return string
-    if ListLength == 1:
-        return string + " 00:00:00"
-    else:
-        return ""
+    return f"{string} 00:00:00" if ListLength == 1 else ""
 
 
 def Set(Until, Since):
-    logme.debug(__name__+':Set')
+    logme.debug(f'{__name__}:Set')
     d = Datelock()
 
     if Until:
         d.until = datetime.datetime.strptime(convertToDateTime(Until), "%Y-%m-%d %H:%M:%S")
         d.until = utc_to_local(d.until)
     else:
-        d.until = datetime.datetime.today()
+        d.until = datetime.datetime.now()
 
     if Since:
         d.since = datetime.datetime.strptime(convertToDateTime(Since), "%Y-%m-%d %H:%M:%S")

@@ -6,9 +6,7 @@ import os
 def outputExt(objType, fType):
     if objType == "str":
         objType = "username"
-    outExt = f"/{objType}s.{fType}"
-
-    return outExt
+    return f"/{objType}s.{fType}"
 
 def addExt(base, objType, fType):
     if len(base.split('.')) == 1:
@@ -22,20 +20,16 @@ def Text(entry, f):
 
 def Type(config):
     if config.User_full:
-        _type = "user"
+        return "user"
     elif config.Followers or config.Following:
-        _type = "username"
+        return "username"
     else:
-        _type = "tweet"
-
-    return _type
+        return "tweet"
 
 def struct(obj, custom, _type):
     if custom:
         fieldnames = custom
-        row = {}
-        for f in fieldnames:
-            row[f] = meta.Data(obj, _type)[f]
+        row = {f: meta.Data(obj, _type)[f] for f in fieldnames}
     else:
         fieldnames = meta.Fieldnames(_type)
         row = meta.Data(obj, _type)

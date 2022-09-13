@@ -15,4 +15,4 @@ def Count(count, config):
 
 def Elastic(elasticsearch):
     if elasticsearch:
-        print("[+] Indexing to Elasticsearch @ " + str(elasticsearch))
+        print(f"[+] Indexing to Elasticsearch @ {str(elasticsearch)}")

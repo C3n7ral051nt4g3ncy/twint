@@ -51,19 +51,17 @@ class Token:
                 sleep_time = 2.0 * 2 ** attempt
                 logme.info(f'Waiting {sleep_time:.0f} seconds')
                 time.sleep(sleep_time)
-        else:
-            msg = f'{self._retries + 1} requests to {self.url} failed, giving up.'
-            logme.fatal(msg)
-            self.config.Guest_token = None
-            raise RefreshTokenException(msg)
+        msg = f'{self._retries + 1} requests to {self.url} failed, giving up.'
+        logme.fatal(msg)
+        self.config.Guest_token = None
+        raise RefreshTokenException(msg)
 
     def refresh(self):
         logme.debug('Retrieving guest token')
         res = self._request()
-        match = re.search(r'\("gt=(\d+);', res.text)
-        if match:
+        if match := re.search(r'\("gt=(\d+);', res.text):
             logme.debug('Found guest token in HTML')
-            self.config.Guest_token = str(match.group(1))
+            self.config.Guest_token = str(match[1])
         else:
             self.config.Guest_token = None
             raise RefreshTokenException('Could not find the Guest token in HTML')

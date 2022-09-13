@@ -16,28 +16,28 @@ class NoMoreTweetsException(Exception):
 
 
 def Follow(response):
-    logme.debug(__name__ + ':Follow')
+    logme.debug(f'{__name__}:Follow')
     soup = BeautifulSoup(response, "html.parser")
     follow = soup.find_all("td", "info fifty screenname")
     cursor = soup.find_all("div", "w-button-more")
     try:
         cursor = findall(r'cursor=(.*?)">', str(cursor))[0]
     except IndexError:
-        logme.critical(__name__ + ':Follow:IndexError')
+        logme.critical(f'{__name__}:Follow:IndexError')
 
     return follow, cursor
 
 
 # TODO: this won't be used by --profile-full anymore. if it isn't used anywhere else, perhaps remove this in future
 def Mobile(response):
-    logme.debug(__name__ + ':Mobile')
+    logme.debug(f'{__name__}:Mobile')
     soup = BeautifulSoup(response, "html.parser")
     tweets = soup.find_all("span", "metadata")
     max_id = soup.find_all("div", "w-button-more")
     try:
         max_id = findall(r'max_id=(.*?)">', str(max_id))[0]
     except Exception as e:
-        logme.critical(__name__ + ':Mobile:' + str(e))
+        logme.critical(f'{__name__}:Mobile:{str(e)}')
 
     return tweets, max_id
 
@@ -49,7 +49,7 @@ def MobileFav(response):
     try:
         max_id = findall(r'max_id=(.*?)">', str(max_id))[0]
     except Exception as e:
-        print(str(e) + " [x] feed.MobileFav")
+        print(f"{str(e)} [x] feed.MobileFav")
 
     return tweets, max_id
 
@@ -66,7 +66,7 @@ def _get_cursor(response):
 
 
 def Json(response):
-    logme.debug(__name__ + ':Json')
+    logme.debug(f'{__name__}:Json')
     json_response = loads(response)
     html = json_response["items_html"]
     soup = BeautifulSoup(html, "html.parser")
@@ -75,7 +75,7 @@ def Json(response):
 
 
 def parse_tweets(config, response):
-    logme.debug(__name__ + ':parse_tweets')
+    logme.debug(f'{__name__}:parse_tweets')
     response = loads(response)
     if len(response['globalObjects']['tweets']) == 0:
         msg = 'No more data!'
@@ -100,7 +100,7 @@ def parse_tweets(config, response):
             try:
                 temp_obj = response['globalObjects']['tweets'][_id]
             except KeyError:
-                logme.info('encountered a deleted tweet with id {}'.format(_id))
+                logme.info(f'encountered a deleted tweet with id {_id}')
 
                 config.deleted.append(_id)
                 continue

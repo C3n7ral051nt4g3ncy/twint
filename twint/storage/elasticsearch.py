@@ -20,8 +20,7 @@ class RecycleObject(object):
     def flush(self): pass
 
 def getLocation(place, **options):
-    location = geolocator.geocode(place,timeout=1000)
-    if location:
+    if location := geolocator.geocode(place, timeout=1000):
         if options.get("near"):
             global _near
             _near = {"lat": location.latitude, "lon": location.longitude}
@@ -35,11 +34,9 @@ def getLocation(place, **options):
         return {}
 
 def handleIndexResponse(response):
-    try:
+    with contextlib.suppress(KeyError):
         if response["status"] == 400:
             return True
-    except KeyError:
-        pass
     if response["acknowledged"]:
         print("[+] Index \"" + response["index"] + "\" created!")
     else:
@@ -198,8 +195,6 @@ def Tweet(Tweet, config):
     global _is_near_def
     date_obj = datetime.strptime(Tweet.datetime, "%Y-%m-%d %H:%M:%S %Z")
 
-    actions = []
-
     try:
         retweet = Tweet.retweet
     except AttributeError:
@@ -208,36 +203,37 @@ def Tweet(Tweet, config):
     dt = f"{Tweet.datestamp} {Tweet.timestamp}"
 
     j_data = {
-            "_index": config.Index_tweets,
-            "_id": str(Tweet.id) + "_raw_" + config.Essid,
-            "_source": {
-                "id": str(Tweet.id),
-                "conversation_id": Tweet.conversation_id,
-                "created_at": Tweet.datetime,
-                "date": dt,
-                "timezone": Tweet.timezone,
-                "place": Tweet.place,
-                "tweet": Tweet.tweet,
-                "language": Tweet.lang,
-                "hashtags": Tweet.hashtags,
-                "cashtags": Tweet.cashtags,
-                "user_id_str": Tweet.user_id_str,
-                "username": Tweet.username,
-                "name": Tweet.name,
-                "day": date_obj.weekday(),
-                "hour": date_obj.hour,
-                "link": Tweet.link,
-                "retweet": retweet,
-                "essid": config.Essid,
-                "nlikes": int(Tweet.likes_count),
-                "nreplies": int(Tweet.replies_count),
-                "nretweets": int(Tweet.retweets_count),
-                "quote_url": Tweet.quote_url,
-                "video": Tweet.video,
-                "search": str(config.Search),
-                "near": config.Near
-                }
-            }
+        "_index": config.Index_tweets,
+        "_id": f"{str(Tweet.id)}_raw_{config.Essid}",
+        "_source": {
+            "id": str(Tweet.id),
+            "conversation_id": Tweet.conversation_id,
+            "created_at": Tweet.datetime,
+            "date": dt,
+            "timezone": Tweet.timezone,
+            "place": Tweet.place,
+            "tweet": Tweet.tweet,
+            "language": Tweet.lang,
+            "hashtags": Tweet.hashtags,
+            "cashtags": Tweet.cashtags,
+            "user_id_str": Tweet.user_id_str,
+            "username": Tweet.username,
+            "name": Tweet.name,
+            "day": date_obj.weekday(),
+            "hour": date_obj.hour,
+            "link": Tweet.link,
+            "retweet": retweet,
+            "essid": config.Essid,
+            "nlikes": int(Tweet.likes_count),
+            "nreplies": int(Tweet.replies_count),
+            "nretweets": int(Tweet.retweets_count),
+            "quote_url": Tweet.quote_url,
+            "video": Tweet.video,
+            "search": str(config.Search),
+            "near": config.Near,
+        },
+    }
+
     if retweet is not None:
         j_data["_source"].update({"user_rt_id": Tweet.user_rt_id})
         j_data["_source"].update({"user_rt": Tweet.user_rt})
@@ -246,36 +242,34 @@ def Tweet(Tweet, config):
     if Tweet.reply_to:
         j_data["_source"].update({"reply_to": Tweet.reply_to})
     if Tweet.photos:
-        _photos = []
-        for photo in Tweet.photos:
-            _photos.append(photo)
+        _photos = list(Tweet.photos)
         j_data["_source"].update({"photos": _photos})
     if Tweet.thumbnail:
         j_data["_source"].update({"thumbnail": Tweet.thumbnail})
     if Tweet.mentions:
-        _mentions = []
-        for mention in Tweet.mentions:
-            _mentions.append(mention)
+        _mentions = list(Tweet.mentions)
         j_data["_source"].update({"mentions": _mentions})
     if Tweet.urls:
-        _urls = []
-        for url in Tweet.urls:
-            _urls.append(url)
+        _urls = list(Tweet.urls)
         j_data["_source"].update({"urls": _urls})
-    if config.Near or config.Geo:
+    if config.Near:
+        if not _is_near_def:
+            __near = ""
+            __geo = config.Geo or ""
+            __near = config.Near
+            _is_near_def = getLocation(__near + __geo, near=True)
+        if _near:
+            j_data["_source"].update({"geo_near": _near})
+    elif config.Geo:
         if not _is_near_def:
             __geo = ""
             __near = ""
-            if config.Geo:
-                __geo = config.Geo
-            if config.Near:
-                __near = config.Near
+            __geo = config.Geo
             _is_near_def = getLocation(__near + __geo, near=True)
         if _near:
             j_data["_source"].update({"geo_near": _near})
     if Tweet.place:
-        _t_place = getLocation(Tweet.place)
-        if _t_place:
+        if _t_place := getLocation(Tweet.place):
             j_data["_source"].update({"geo_tweet": getLocation(Tweet.place)})
     if Tweet.source:
         j_data["_source"].update({"source": Tweet.Source})
@@ -284,8 +278,7 @@ def Tweet(Tweet, config):
         j_data["_source"].update({"trans_src": Tweet.trans_src})
         j_data["_source"].update({"trans_dest": Tweet.trans_dest})
 
-    actions.append(j_data)
-
+    actions = [j_data]
     es = Elasticsearch(config.Elasticsearch, verify_certs=config.Skip_certs)
     if not _index_tweet_status:
         _index_tweet_status = createIndex(config, es, scope="tweet")
@@ -295,8 +288,6 @@ def Tweet(Tweet, config):
 
 def Follow(user, config):
     global _index_follow_status
-    actions = []
-
     if config.Following:
         _user = config.Username
         _follow = user
@@ -304,16 +295,12 @@ def Follow(user, config):
         _user = user
         _follow = config.Username
     j_data = {
-            "_index": config.Index_follow,
-            "_id": _user + "_" + _follow + "_" + config.Essid,
-            "_source": {
-                "user": _user,
-                "follow": _follow,
-                "essid": config.Essid
-                }
-            }
-    actions.append(j_data)
+        "_index": config.Index_follow,
+        "_id": f"{_user}_{_follow}_{config.Essid}",
+        "_source": {"user": _user, "follow": _follow, "essid": config.Essid},
+    }
 
+    actions = [j_data]
     es = Elasticsearch(config.Elasticsearch, verify_certs=config.Skip_certs)
     if not _index_follow_status:
         _index_follow_status = createIndex(config, es, scope="follow")
@@ -324,38 +311,36 @@ def Follow(user, config):
 def UserProfile(user, config):
     global _index_user_status
     global _is_location_def
-    actions = []
-
     j_data = {
-            "_index": config.Index_users,
-            "_id": user.id + "_" + user.join_date + "_" + user.join_time + "_" + config.Essid,
-            "_source": {
-                "id": user.id,
-                "name": user.name,
-                "username": user.username,
-                "bio": user.bio,
-                "location": user.location,
-                "url": user.url,
-                "join_datetime": user.join_date + " " + user.join_time,
-                "tweets": user.tweets,
-                "following": user.following,
-                "followers": user.followers,
-                "likes": user.likes,
-                "media": user.media_count,
-                "private": user.is_private,
-                "verified": user.is_verified,
-                "avatar": user.avatar,
-                "background_image": user.background_image,
-                "session": config.Essid
-                }
-            }
+        "_index": config.Index_users,
+        "_id": f"{user.id}_{user.join_date}_{user.join_time}_{config.Essid}",
+        "_source": {
+            "id": user.id,
+            "name": user.name,
+            "username": user.username,
+            "bio": user.bio,
+            "location": user.location,
+            "url": user.url,
+            "join_datetime": f"{user.join_date} {user.join_time}",
+            "tweets": user.tweets,
+            "following": user.following,
+            "followers": user.followers,
+            "likes": user.likes,
+            "media": user.media_count,
+            "private": user.is_private,
+            "verified": user.is_verified,
+            "avatar": user.avatar,
+            "background_image": user.background_image,
+            "session": config.Essid,
+        },
+    }
+
     if config.Location:
         if not _is_location_def:
             _is_location_def = getLocation(user.location, location=True)
         if _location:
             j_data["_source"].update({"geo_user": _location})
-    actions.append(j_data)
-
+    actions = [j_data]
     es = Elasticsearch(config.Elasticsearch, verify_certs=config.Skip_certs)
     if not _index_user_status:
         _index_user_status = createIndex(config, es, scope="user")
